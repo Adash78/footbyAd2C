@@ -33,18 +33,40 @@ page = st.sidebar.radio(
 # PAGE ACCUEIL
 # ----------------------------------------------------------
 if page == "🏠 Accueil":
-    st.title("Analyse des 5 grands championnats européens")
-    st.write(
-        "Bienvenue sur ce tableau de bord d'analyse des performances des équipes "
-        "des 5 grands championnats européens, depuis la saison 2020-2021."
-    )
-    st.markdown("""
-    - **🏆 Classement général** — points, victoires, nuls, défaites, titres
-    - **⚔️ Meilleures attaques** — buts marqués, total / domicile / extérieur
-    - **🛡️ Meilleures défenses** — buts encaissés, total / domicile / extérieur, avec option "équipes non reléguées"
-    """)
-    st.info(f"Championnats couverts : {', '.join(liste_championnats)}")
-    st.info(f"Saisons couvertes : de {par_saison['saison'].min()} à {par_saison['saison'].max()}")
+    st.title("⚽ Analyse des 5 grands championnats européens")
+    st.caption(f"Données de {par_saison['saison'].min()} à {par_saison['saison'].max()} — "
+               f"{', '.join(liste_championnats)}")
+
+    st.divider()
+
+    # ---- Chiffres clés calculés automatiquement ----
+    meilleure_attaque = cumul.loc[cumul['buts_marques_total'].idxmax()]
+    meilleure_defense = cumul.loc[cumul['buts_encaisses_total'].idxmin()]
+    plus_titree = cumul.loc[cumul['titres'].idxmax()]
+    plus_de_points = cumul.loc[cumul['points_total'].idxmax()]
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("🏆 Plus de titres", plus_titree['equipe'], f"{int(plus_titree['titres'])} titre(s)")
+    col2.metric("🔥 Meilleure attaque", meilleure_attaque['equipe'], f"{int(meilleure_attaque['buts_marques_total'])} buts")
+    col3.metric("🧱 Meilleure défense", meilleure_defense['equipe'], f"{int(meilleure_defense['buts_encaisses_total'])} encaissés")
+    col4.metric("⭐ Plus de points", plus_de_points['equipe'], f"{int(plus_de_points['points_total'])} pts")
+
+    st.divider()
+
+    # ---- Présentation / navigation ----
+    st.subheader("Explorer les données")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown("### 🏆 Classement général")
+        st.write("Points, victoires, nuls, défaites et titres — par championnat ou toutes ligues confondues.")
+    with c2:
+        st.markdown("### ⚔️ Meilleures attaques")
+        st.write("Buts marqués, total / domicile / extérieur, avec ratio par match.")
+    with c3:
+        st.markdown("### 🛡️ Meilleures défenses")
+        st.write("Buts encaissés, avec filtre sur les équipes non reléguées.")
+
+    st.info("👈 Utilisez le menu à gauche pour naviguer entre les pages")
 
 # ----------------------------------------------------------
 # PAGE CLASSEMENT GÉNÉRAL
@@ -112,13 +134,19 @@ elif page == "⚔️ Meilleures attaques":
 
     if champ_choisi == "Tous les championnats":
         data = cumul.copy()
-        tableau = data[['equipe', 'championnat', col]].rename(
-            columns={'equipe': 'Équipe', 'championnat': 'Championnat', col: titre_col}
+        data['nb_matchs'] = data['victoires_total'] + data['nuls_total'] + data['defaites_total']
+        data['ratio'] = (data[col] / data['nb_matchs']).round(2)
+        tableau = data[['equipe', 'championnat', col, 'nb_matchs', 'ratio']].rename(
+            columns={'equipe': 'Équipe', 'championnat': 'Championnat', col: titre_col,
+                     'nb_matchs': 'Matchs joués', 'ratio': f'{titre_col} / match'}
         ).sort_values(titre_col, ascending=False).reset_index(drop=True)
     else:
         data = cumul[cumul['championnat'] == champ_choisi]
-        tableau = data[['equipe', col]].rename(
-            columns={'equipe': 'Équipe', col: titre_col}
+        data['nb_matchs'] = data['victoires_total'] + data['nuls_total'] + data['defaites_total']
+        data['ratio'] = (data[col] / data['nb_matchs']).round(2)
+        tableau = data[['equipe', col, 'nb_matchs', 'ratio']].rename(
+            columns={'equipe': 'Équipe', col: titre_col,
+                     'nb_matchs': 'Matchs joués', 'ratio': f'{titre_col} / match'}
         ).sort_values(titre_col, ascending=False).reset_index(drop=True)
 
     tableau.index = range(1, len(tableau) + 1)
@@ -151,16 +179,22 @@ elif page == "🛡️ Meilleures défenses":
         if non_relegues_seulement:
             data['nb_saisons_total_champ'] = data['championnat'].map(nb_saisons_total_par_champ)
             data = data[data['nb_saisons'] == data['nb_saisons_total_champ']]
-        tableau = data[['equipe', 'championnat', col, 'nb_saisons']].rename(
-            columns={'equipe': 'Équipe', 'championnat': 'Championnat', col: titre_col, 'nb_saisons': 'Saisons jouées'}
+        data['nb_matchs'] = data['victoires_total'] + data['nuls_total'] + data['defaites_total']
+        data['ratio'] = (data[col] / data['nb_matchs']).round(2)
+        tableau = data[['equipe', 'championnat', col, 'nb_matchs', 'ratio', 'nb_saisons']].rename(
+            columns={'equipe': 'Équipe', 'championnat': 'Championnat', col: titre_col,
+                     'nb_matchs': 'Matchs joués', 'ratio': f'{titre_col} / match', 'nb_saisons': 'Saisons jouées'}
         ).sort_values(titre_col, ascending=True).reset_index(drop=True)
     else:
         data = cumul[cumul['championnat'] == champ_choisi]
         if non_relegues_seulement:
             total_saisons = nb_saisons_total_par_champ[champ_choisi]
             data = data[data['nb_saisons'] == total_saisons]
-        tableau = data[['equipe', col, 'nb_saisons']].rename(
-            columns={'equipe': 'Équipe', col: titre_col, 'nb_saisons': 'Saisons jouées'}
+        data['nb_matchs'] = data['victoires_total'] + data['nuls_total'] + data['defaites_total']
+        data['ratio'] = (data[col] / data['nb_matchs']).round(2)
+        tableau = data[['equipe', col, 'nb_matchs', 'ratio', 'nb_saisons']].rename(
+            columns={'equipe': 'Équipe', col: titre_col,
+                     'nb_matchs': 'Matchs joués', 'ratio': f'{titre_col} / match', 'nb_saisons': 'Saisons jouées'}
         ).sort_values(titre_col, ascending=True).reset_index(drop=True)
 
     tableau.index = range(1, len(tableau) + 1)
