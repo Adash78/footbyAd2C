@@ -56,11 +56,25 @@ elif page == "🏆 Classement général":
 
     if champ_choisi == "Tous les championnats":
         data = cumul.copy()
-        colonnes = ['equipe', 'championnat', 'points_total', 'victoires_total', 'nuls_total', 'defaites_total', 'titres']
+
+        # Nombre de matchs joués = victoires + nuls + défaites
+        data['nb_matchs'] = data['victoires_total'] + data['nuls_total'] + data['defaites_total']
+
+        # Ratios par match (arrondis à 2 décimales)
+        data['pts_par_match'] = (data['points_total'] / data['nb_matchs']).round(2)
+        data['buts_par_match'] = (data['buts_marques_total'] / data['nb_matchs']).round(2)
+        data['buts_encaisses_par_match'] = (data['buts_encaisses_total'] / data['nb_matchs']).round(2)
+
+        colonnes = [
+            'equipe', 'championnat', 'points_total', 'victoires_total', 'nuls_total', 'defaites_total',
+            'titres', 'nb_matchs', 'pts_par_match', 'buts_par_match', 'buts_encaisses_par_match'
+        ]
         noms = {
             'equipe': 'Équipe', 'championnat': 'Championnat', 'points_total': 'Points',
             'victoires_total': 'Victoires', 'nuls_total': 'Nuls',
-            'defaites_total': 'Défaites', 'titres': 'Titres'
+            'defaites_total': 'Défaites', 'titres': 'Titres',
+            'nb_matchs': 'Matchs joués', 'pts_par_match': 'Points / match',
+            'buts_par_match': 'Buts marqués / match', 'buts_encaisses_par_match': 'Buts encaissés / match'
         }
     else:
         data = cumul[cumul['championnat'] == champ_choisi]
