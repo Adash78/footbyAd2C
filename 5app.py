@@ -40,16 +40,22 @@ if page == "🏠 Accueil":
     st.divider()
 
     # ---- Chiffres clés calculés automatiquement ----
+    # Meilleure défense : uniquement parmi les équipes présentes sur toutes les saisons de leur championnat
+    cumul_avec_total = cumul.copy()
+    cumul_avec_total['nb_saisons_total_champ'] = cumul_avec_total['championnat'].map(nb_saisons_total_par_champ)
+    equipes_non_reléguées = cumul_avec_total[cumul_avec_total['nb_saisons'] == cumul_avec_total['nb_saisons_total_champ']]
+
     meilleure_attaque = cumul.loc[cumul['buts_marques_total'].idxmax()]
-    meilleure_defense = cumul.loc[cumul['buts_encaisses_total'].idxmin()]
+    meilleure_defense = equipes_non_reléguées.loc[equipes_non_reléguées['buts_encaisses_total'].idxmin()]
     plus_titree = cumul.loc[cumul['titres'].idxmax()]
     plus_de_points = cumul.loc[cumul['points_total'].idxmax()]
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("🏆 Plus de titres", plus_titree['equipe'], f"{int(plus_titree['titres'])} titre(s)")
     col2.metric("🔥 Meilleure attaque", meilleure_attaque['equipe'], f"{int(meilleure_attaque['buts_marques_total'])} buts")
-    col3.metric("🧱 Meilleure défense", meilleure_defense['equipe'], f"{int(meilleure_defense['buts_encaisses_total'])} encaissés")
+    col3.metric("🧱 Meilleure défense*", meilleure_defense['equipe'], f"{int(meilleure_defense['buts_encaisses_total'])} encaissés")
     col4.metric("⭐ Plus de points", plus_de_points['equipe'], f"{int(plus_de_points['points_total'])} pts")
+    st.caption("*Parmi les équipes présentes sur toutes les saisons de leur championnat")
 
     st.divider()
 
