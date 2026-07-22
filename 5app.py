@@ -18,6 +18,7 @@ par_saison, cumul = charger_donnees()
 nb_saisons_total_par_champ = par_saison.groupby('championnat')['saison'].nunique()
 
 liste_championnats = sorted(cumul['championnat'].unique())
+liste_championnats_avec_tous = ["Tous les championnats"] + liste_championnats
 
 # ----------------------------------------------------------
 # Navigation
@@ -51,21 +52,26 @@ if page == "🏠 Accueil":
 elif page == "🏆 Classement général":
     st.title("🏆 Classement général cumulé")
 
-    champ_choisi = st.selectbox("Choisir un championnat :", liste_championnats)
+    champ_choisi = st.selectbox("Choisir un championnat :", liste_championnats_avec_tous)
 
-    data = cumul[cumul['championnat'] == champ_choisi]
+    if champ_choisi == "Tous les championnats":
+        data = cumul.copy()
+        colonnes = ['equipe', 'championnat', 'points_total', 'victoires_total', 'nuls_total', 'defaites_total', 'titres']
+        noms = {
+            'equipe': 'Équipe', 'championnat': 'Championnat', 'points_total': 'Points',
+            'victoires_total': 'Victoires', 'nuls_total': 'Nuls',
+            'defaites_total': 'Défaites', 'titres': 'Titres'
+        }
+    else:
+        data = cumul[cumul['championnat'] == champ_choisi]
+        colonnes = ['equipe', 'points_total', 'victoires_total', 'nuls_total', 'defaites_total', 'titres']
+        noms = {
+            'equipe': 'Équipe', 'points_total': 'Points',
+            'victoires_total': 'Victoires', 'nuls_total': 'Nuls',
+            'defaites_total': 'Défaites', 'titres': 'Titres'
+        }
 
-    tableau = data[[
-        'equipe', 'points_total', 'victoires_total', 'nuls_total',
-        'defaites_total', 'titres'
-    ]].rename(columns={
-        'equipe': 'Équipe',
-        'points_total': 'Points',
-        'victoires_total': 'Victoires',
-        'nuls_total': 'Nuls',
-        'defaites_total': 'Défaites',
-        'titres': 'Titres'
-    }).sort_values('Points', ascending=False).reset_index(drop=True)
+    tableau = data[colonnes].rename(columns=noms).sort_values('Points', ascending=False).reset_index(drop=True)
 
     tableau.index = range(1, len(tableau) + 1)
     tableau.index.name = 'Rang'
@@ -77,7 +83,7 @@ elif page == "🏆 Classement général":
 elif page == "⚔️ Meilleures attaques":
     st.title("⚔️ Meilleures attaques")
 
-    champ_choisi = st.selectbox("Choisir un championnat :", liste_championnats)
+    champ_choisi = st.selectbox("Choisir un championnat :", liste_championnats_avec_tous)
     vue = st.radio("Afficher :", ["Total", "Domicile", "Extérieur"], horizontal=True)
 
     if vue == "Total":
@@ -90,11 +96,16 @@ elif page == "⚔️ Meilleures attaques":
         col = 'buts_marques_ext_total'
         titre_col = 'Buts marqués (extérieur)'
 
-    data = cumul[cumul['championnat'] == champ_choisi]
-
-    tableau = data[['equipe', col]].rename(
-        columns={'equipe': 'Équipe', col: titre_col}
-    ).sort_values(titre_col, ascending=False).reset_index(drop=True)
+    if champ_choisi == "Tous les championnats":
+        data = cumul.copy()
+        tableau = data[['equipe', 'championnat', col]].rename(
+            columns={'equipe': 'Équipe', 'championnat': 'Championnat', col: titre_col}
+        ).sort_values(titre_col, ascending=False).reset_index(drop=True)
+    else:
+        data = cumul[cumul['championnat'] == champ_choisi]
+        tableau = data[['equipe', col]].rename(
+            columns={'equipe': 'Équipe', col: titre_col}
+        ).sort_values(titre_col, ascending=False).reset_index(drop=True)
 
     tableau.index = range(1, len(tableau) + 1)
     tableau.index.name = 'Rang'
@@ -107,7 +118,7 @@ elif page == "⚔️ Meilleures attaques":
 elif page == "🛡️ Meilleures défenses":
     st.title("🛡️ Meilleures défenses")
 
-    champ_choisi = st.selectbox("Choisir un championnat :", liste_championnats)
+    champ_choisi = st.selectbox("Choisir un championnat :", liste_championnats_avec_tous)
     vue = st.radio("Afficher :", ["Total", "Domicile", "Extérieur"], horizontal=True)
     non_relegues_seulement = st.checkbox("Afficher uniquement les équipes présentes sur toutes les saisons (non reléguées)")
 
@@ -121,15 +132,22 @@ elif page == "🛡️ Meilleures défenses":
         col = 'buts_encaisses_ext_total'
         titre_col = 'Buts encaissés (extérieur)'
 
-    data = cumul[cumul['championnat'] == champ_choisi]
-
-    if non_relegues_seulement:
-        total_saisons = nb_saisons_total_par_champ[champ_choisi]
-        data = data[data['nb_saisons'] == total_saisons]
-
-    tableau = data[['equipe', col, 'nb_saisons']].rename(
-        columns={'equipe': 'Équipe', col: titre_col, 'nb_saisons': 'Saisons jouées'}
-    ).sort_values(titre_col, ascending=True).reset_index(drop=True)
+    if champ_choisi == "Tous les championnats":
+        data = cumul.copy()
+        if non_relegues_seulement:
+            data['nb_saisons_total_champ'] = data['championnat'].map(nb_saisons_total_par_champ)
+            data = data[data['nb_saisons'] == data['nb_saisons_total_champ']]
+        tableau = data[['equipe', 'championnat', col, 'nb_saisons']].rename(
+            columns={'equipe': 'Équipe', 'championnat': 'Championnat', col: titre_col, 'nb_saisons': 'Saisons jouées'}
+        ).sort_values(titre_col, ascending=True).reset_index(drop=True)
+    else:
+        data = cumul[cumul['championnat'] == champ_choisi]
+        if non_relegues_seulement:
+            total_saisons = nb_saisons_total_par_champ[champ_choisi]
+            data = data[data['nb_saisons'] == total_saisons]
+        tableau = data[['equipe', col, 'nb_saisons']].rename(
+            columns={'equipe': 'Équipe', col: titre_col, 'nb_saisons': 'Saisons jouées'}
+        ).sort_values(titre_col, ascending=True).reset_index(drop=True)
 
     tableau.index = range(1, len(tableau) + 1)
     tableau.index.name = 'Rang'
