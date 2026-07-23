@@ -89,11 +89,8 @@ elif page == "🏆 Classement général":
         data = cumul[cumul['championnat'] == champ_choisi].copy()
         colonnes_base = ['equipe']
 
-    # Nombre de matchs joués et ratios (toujours calculés, quel que soit le tri choisi)
+    # Nombre de matchs joués (toujours calculé, quel que soit le filtre choisi)
     data['nb_matchs'] = data['victoires_total'] + data['nuls_total'] + data['defaites_total']
-    data['pts_par_match'] = (data['points_total'] / data['nb_matchs']).round(2)
-    data['buts_par_match'] = (data['buts_marques_total'] / data['nb_matchs']).round(2)
-    data['buts_encaisses_par_match'] = (data['buts_encaisses_total'] / data['nb_matchs']).round(2)
 
     # Options de filtre disponibles : colonne réelle -> libellé affiché
     options_filtre = {
@@ -102,9 +99,8 @@ elif page == "🏆 Classement général":
         'nuls_total': 'Nuls',
         'defaites_total': 'Défaites',
         'titres': 'Titres',
-        'pts_par_match': 'Points / match',
-        'buts_par_match': 'Buts marqués / match',
-        'buts_encaisses_par_match': 'Buts encaissés / match',
+        'buts_marques_total': 'Buts marqués',
+        'buts_encaisses_total': 'Buts encaissés',
     }
 
     filtres_choisis = st.multiselect(
@@ -116,15 +112,15 @@ elif page == "🏆 Classement général":
     noms = {
         'equipe': 'Équipe', 'championnat': 'Championnat', 'points_total': 'Pts',
         'victoires_total': 'V', 'nuls_total': 'N', 'defaites_total': 'D',
-        'titres': 'Titres', 'nb_matchs': 'MJ', 'pts_par_match': 'Pts/Match',
-        'buts_par_match': 'BM/Match', 'buts_encaisses_par_match': 'BE/Match'
+        'titres': 'Titres', 'nb_matchs': 'MJ', 'buts_marques_total': 'BM',
+        'buts_encaisses_total': 'BE'
     }
 
     if not filtres_choisis:
         # ---- Aucun filtre : tableau complet, trié par points ----
         colonnes_completes = colonnes_base + [
             'points_total', 'victoires_total', 'nuls_total', 'defaites_total', 'titres',
-            'nb_matchs', 'pts_par_match', 'buts_par_match', 'buts_encaisses_par_match'
+            'nb_matchs', 'buts_marques_total', 'buts_encaisses_total'
         ]
         tableau = data[colonnes_completes].rename(columns=noms).sort_values(
             'Pts', ascending=False
@@ -136,7 +132,7 @@ elif page == "🏆 Classement général":
 
         # Tri sur la première colonne sélectionnée
         premiere_col = colonnes_reelles[0]
-        ordre_ascendant = (premiere_col == 'buts_encaisses_par_match')
+        ordre_ascendant = (premiere_col == 'buts_encaisses_total')
 
         tableau = data[colonnes_a_afficher].rename(columns=noms).sort_values(
             noms[premiere_col], ascending=ordre_ascendant
