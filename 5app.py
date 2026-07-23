@@ -112,26 +112,27 @@ elif page == "🏆 Classement général":
         list(options_filtre.values())
     )
 
-    colonnes_completes = colonnes_base + [
-        'points_total', 'victoires_total', 'nuls_total', 'defaites_total', 'titres',
-        'nb_matchs', 'pts_par_match', 'buts_par_match', 'buts_encaisses_par_match'
-    ]
+    # Noms raccourcis pour que tout le tableau tienne à l'écran sans scroll horizontal
     noms = {
-        'equipe': 'Équipe', 'championnat': 'Championnat', 'points_total': 'Points',
-        'victoires_total': 'Victoires', 'nuls_total': 'Nuls', 'defaites_total': 'Défaites',
-        'titres': 'Titres', 'nb_matchs': 'Matchs joués', 'pts_par_match': 'Points / match',
-        'buts_par_match': 'Buts marqués / match', 'buts_encaisses_par_match': 'Buts encaissés / match'
+        'equipe': 'Équipe', 'championnat': 'Championnat', 'points_total': 'Pts',
+        'victoires_total': 'V', 'nuls_total': 'N', 'defaites_total': 'D',
+        'titres': 'Titres', 'nb_matchs': 'MJ', 'pts_par_match': 'Pts/Match',
+        'buts_par_match': 'BM/Match', 'buts_encaisses_par_match': 'BE/Match'
     }
 
     if not filtres_choisis:
         # ---- Aucun filtre : tableau complet, trié par points ----
+        colonnes_completes = colonnes_base + [
+            'points_total', 'victoires_total', 'nuls_total', 'defaites_total', 'titres',
+            'nb_matchs', 'pts_par_match', 'buts_par_match', 'buts_encaisses_par_match'
+        ]
         tableau = data[colonnes_completes].rename(columns=noms).sort_values(
-            'Points', ascending=False
+            'Pts', ascending=False
         ).reset_index(drop=True)
     else:
-        # ---- Filtre(s) choisis : Équipe (+ Championnat) + Matchs joués + colonnes sélectionnées ----
+        # ---- Filtre(s) choisis : Équipe (+ Championnat) + colonnes sélectionnées + Matchs joués ----
         colonnes_reelles = [k for k, v in options_filtre.items() if v in filtres_choisis]
-        colonnes_a_afficher = colonnes_base + ['nb_matchs'] + colonnes_reelles
+        colonnes_a_afficher = colonnes_base + colonnes_reelles + ['nb_matchs']
 
         # Tri sur la première colonne sélectionnée
         premiere_col = colonnes_reelles[0]
