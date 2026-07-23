@@ -95,8 +95,8 @@ elif page == "🏆 Classement général":
     data['buts_par_match'] = (data['buts_marques_total'] / data['nb_matchs']).round(2)
     data['buts_encaisses_par_match'] = (data['buts_encaisses_total'] / data['nb_matchs']).round(2)
 
-    # Options de tri disponibles : colonne réelle -> libellé affiché
-    options_tri = {
+    # Options de filtre disponibles : colonne réelle -> libellé affiché
+    options_filtre = {
         'points_total': 'Points',
         'victoires_total': 'Victoires',
         'nuls_total': 'Nuls',
@@ -107,14 +107,12 @@ elif page == "🏆 Classement général":
         'buts_encaisses_par_match': 'Buts encaissés / match',
     }
 
-    tri_choisi = st.selectbox("Trier / filtrer par :", list(options_tri.values()))
-    # Retrouver le nom de colonne réel à partir du libellé choisi
-    col_tri = [k for k, v in options_tri.items() if v == tri_choisi][0]
+    filtres_choisis = st.multiselect(
+        "Afficher uniquement certaines colonnes (laisser vide pour le tableau complet) :",
+        list(options_filtre.values())
+    )
 
-    # Le tri "buts encaissés" est meilleur quand c'est bas, tous les autres sont meilleurs quand c'est haut
-    ordre_ascendant = (col_tri == 'buts_encaisses_par_match')
-
-    colonnes = colonnes_base + [
+    colonnes_completes = colonnes_base + [
         'points_total', 'victoires_total', 'nuls_total', 'defaites_total', 'titres',
         'nb_matchs', 'pts_par_match', 'buts_par_match', 'buts_encaisses_par_match'
     ]
@@ -125,9 +123,23 @@ elif page == "🏆 Classement général":
         'buts_par_match': 'Buts marqués / match', 'buts_encaisses_par_match': 'Buts encaissés / match'
     }
 
-    tableau = data[colonnes].rename(columns=noms).sort_values(
-        noms[col_tri], ascending=ordre_ascendant
-    ).reset_index(drop=True)
+    if not filtres_choisis:
+        # ---- Aucun filtre : tableau complet, trié par points ----
+        tableau = data[colonnes_completes].rename(columns=noms).sort_values(
+            'Points', ascending=False
+        ).reset_index(drop=True)
+    else:
+        # ---- Filtre(s) choisis : Équipe (+ Championnat) + Matchs joués + colonnes sélectionnées ----
+        colonnes_reelles = [k for k, v in options_filtre.items() if v in filtres_choisis]
+        colonnes_a_afficher = colonnes_base + ['nb_matchs'] + colonnes_reelles
+
+        # Tri sur la première colonne sélectionnée
+        premiere_col = colonnes_reelles[0]
+        ordre_ascendant = (premiere_col == 'buts_encaisses_par_match')
+
+        tableau = data[colonnes_a_afficher].rename(columns=noms).sort_values(
+            noms[premiere_col], ascending=ordre_ascendant
+        ).reset_index(drop=True)
 
     tableau.index = range(1, len(tableau) + 1)
     tableau.index.name = 'Rang'
